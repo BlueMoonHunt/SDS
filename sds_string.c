@@ -18,19 +18,23 @@ struct wstring {
     wchar_t data[];
 };
 
+// --- ustring Implementation ---
+
+ustring* ustring_create_with_capacity(const size_t size, Arena* arena) {
+    size_t allocated_elements = alignUpPow2(size + 1, STRING_BLOCK_SIZE);
+    ustring* str = (ustring*)arena_alloc(arena, sizeof(ustring) + allocated_elements * sizeof(char), alignof(ustring));
+
+    str->size = size;
+    str->capacity = allocated_elements - 1;
+    return str;
+}
+
 ustring* ustring_create(const char* text, Arena* arena) {
     if (!text)
         text = "";
-    size_t size_in_bytes = strlen(text);
-    size_t capacity_in_bytes = alignUpPow2(size_in_bytes + 1, STRING_BLOCK_SIZE);
-
-    ustring* str = (ustring*)arena_alloc(arena, sizeof(ustring) + capacity_in_bytes, 1);
-    if (!str)
-        return NULL;
-
-    str->size = size_in_bytes;
-    str->capacity = capacity_in_bytes;
-    strcpy(str->data, text);
+    size_t size = strlen(text);
+    ustring* str = ustring_create_with_capacity(size, arena);
+    memcpy(str->data, text, size + 1);
     return str;
 }
 
@@ -47,40 +51,72 @@ size_t ustring_capacity(const ustring* text) {
 }
 
 ustring* ustring_concat(const ustring* text1, const ustring* text2, Arena* arena) {
-    if (!text1 || !text2)
-        return ustring_create("", arena);
-    size_t size = text1->size + text2->size + 1;
-    char* str = (char*)arena_alloc(arena, size, 1);
+    if (!text1)
+        return ustring_create(ustring_to_cstr(text2), arena);
+    if (!text2)
+        return ustring_create(ustring_to_cstr(text1), arena);
 
-    memcpy(str, text1->data, text1->size);
-    memcpy(str, text2->data, text2->size);
-    str[size] = '\0';
+    size_t new_size = text1->size + text2->size;
+    ustring* new_str = ustring_create_with_capacity(new_size, arena);
 
-    return ustring_create(str, arena);
+    memcpy(new_str->data, text1->data, text1->size);
+    memcpy(new_str->data + text1->size, text2->data, text2->size);
+    new_str->data[new_size] = '\0';
+
+    return new_str;
+}
+
+void ustring_append(ustring** destination, const ustring* source, Arena* arena) {
+    if (!destination || !(*destination) || !source)
+        return;
+    ustring* destination_str = *destination;
+    size_t new_size = destination_str->size + source->size;
+
+    if (destination_str->capacity >= new_size) {
+        memcpy(destination_str->data + destination_str->size, source->data, source->size + 1);
+        destination_str->size = new_size;
+    }
+    else {
+        *destination = ustring_concat(*destination, source, arena);
+    }
+}
+
+void ustring_append_cstr(ustring** destination, const char* cstr, Arena* arena) {
+    if (!cstr)
+        return;
+    ustring* temp = ustring_create(cstr, arena);
+    ustring_append(destination, temp, arena);
 }
 
 _Bool ustring_equals(const ustring* text1, const ustring* text2) {
-    return (text1 && text2 && text1->size == text2->size && strcmp(text1->data, text2->data) == 0);
+    if (!text1 || !text2)
+        return text1 == text2;
+    if (text1->size != text2->size)
+        return false;
+    return memcmp(text1->data, text2->data, text1->size) == 0;
+}
+
+// --- wstring Implementation ---
+
+wstring* wstring_create_with_capacity(const size_t size, Arena* arena) {
+    size_t allocated_elements = alignUpPow2(size + 1, STRING_BLOCK_SIZE);
+
+    wstring* wide_str = (wstring*)arena_alloc(arena, sizeof(wstring) + allocated_elements * sizeof(wchar_t), alignof(wstring));
+
+    wide_str->size = size;
+    wide_str->capacity = allocated_elements - 1;
+    return wide_str;
 }
 
 wstring* wstring_create(const wchar_t* text, Arena* arena) {
     if (!text)
         text = L"";
-    size_t len = wcslen(text);
-    size_t size_in_bytes = len * sizeof(wchar_t);
-    size_t capacity_in_bytes = alignUpPow2(size_in_bytes + sizeof(wchar_t), STRING_BLOCK_SIZE);
-#ifdef _WIN32
-    wstring* str = (wstring*)arena_alloc(arena, sizeof(wstring) + capacity_in_bytes, 2);
-#else
-    wstring* str = (wstring*)arena_alloc(arena, sizeof(wstring) + capacity_in_bytes, 4);
-#endif
-    if (!str)
-        return NULL;
+    size_t size = wcslen(text);
+    wstring* wide_str = wstring_create_with_capacity(size, arena);
 
-    str->size = size_in_bytes;
-    str->capacity = capacity_in_bytes;
-    wcscpy(str->data, text);
-    return str;
+    memcpy(wide_str->data, text, size * sizeof(wchar_t));
+    wide_str->data[wide_str->size] = L'\0';
+    return wide_str;
 }
 
 const wchar_t* wstring_to_wstr(const wstring* text) {
@@ -96,18 +132,48 @@ size_t wstring_capacity(const wstring* text) {
 }
 
 wstring* wstring_concat(const wstring* text1, const wstring* text2, Arena* arena) {
-    if (!text1 || !text2)
-        return wstring_create(L"", arena);
-    size_t size = text1->size + text2->size + 1;
-    wchar_t* str = (wchar_t*)arena_alloc(arena, size * sizeof(wchar_t), 2);
+    if (!text1)
+        return wstring_create(wstring_to_wstr(text2), arena);
+    if (!text2)
+        return wstring_create(wstring_to_wstr(text1), arena);
 
-    memcpy(str, text1->data, text1->size * sizeof(wchar_t));
-    memcpy(str, text2->data, text2->size * sizeof(wchar_t));
-    str[size] = L'\0';
+    size_t new_size = text1->size + text2->size;
+    wstring* wide_str = wstring_create_with_capacity(new_size, arena);
 
-    return wstring_create(str, arena);
+    memcpy(wide_str->data, text1->data, text1->size * sizeof(wchar_t));
+    memcpy(wide_str->data + text1->size, text2->data, text2->size * sizeof(wchar_t));
+    wide_str->data[new_size] = L'\0';
+
+    return wide_str;
+}
+
+void wstring_append(wstring** destination, const wstring* source, Arena* arena) {
+    if (!destination || !(*destination) || !source)
+        return;
+    wstring* destination_str = *destination;
+    size_t new_size = destination_str->size + source->size;
+
+    if (destination_str->capacity >= new_size) {
+        memcpy(destination_str->data + destination_str->size, source->data, (source->size + 1) * sizeof(wchar_t));
+        destination_str->size = new_size;
+    }
+    else {
+        *destination = wstring_concat(*destination, source, arena);
+    }
+}
+
+void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena) {
+    if (!wstr)
+        return;
+    wstring* temp = wstring_create(wstr, arena);
+    wstring_append(destination, temp, arena);
 }
 
 _Bool wstring_equals(const wstring* text1, const wstring* text2) {
-    return (text1 && text2 && text1->size == text2->size && wcscmp(text1->data, text2->data) == 0);
+    if (!text1 || !text2)
+        return text1 == text2;
+    if (text1->size != text2->size)
+        return false;
+
+    return wmemcmp(text1->data, text2->data, text1->size) == 0;
 }
