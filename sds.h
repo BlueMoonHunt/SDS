@@ -1,8 +1,9 @@
 #ifndef SDS_IMPLEMENTATION
 #define SDS_IMPLEMENTATION
 
-#include "stdint.h"
-#include "stdalign.h"
+#include <stdint.h>
+#include <stdalign.h>
+#include <assert.h>
 
 #define alignUpPow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
 #define alignDownPow2(x,b) ((x)&(~((b) - 1)))
@@ -42,11 +43,11 @@
         }; \
     } prefix##vec4;
 
-vecGen(int32_t, i8)
+vecGen(int8_t, i8)
 vecGen(int16_t, i16)
 vecGen(int32_t, i32)
 vecGen(int64_t, i64)
-vecGen(uint32_t, u8)
+vecGen(uint8_t, u8)
 vecGen(uint16_t, u16)
 vecGen(uint32_t, u32)
 vecGen(uint64_t, u64)
@@ -62,12 +63,12 @@ enum ArenaFlag {
 typedef struct OverflowBlock OverflowBlock;
 typedef struct Arena Arena;
 
-extern Arena* arena_create(size_t capacity, ArenaFlag flag);
-extern void arena_destroy(Arena* arena);
-extern void* arena_alloc(Arena* arena, size_t size, size_t alignment);
-extern void arena_reset(Arena* arena);
-extern size_t arena_get_state(Arena* arena);
-extern void arena_rewind(Arena* arena, size_t previousState);
+Arena* arena_create(size_t capacity, ArenaFlag flag);
+void arena_destroy(Arena* arena);
+void* arena_alloc(Arena* arena, size_t size, size_t alignment);
+void arena_reset(Arena* arena);
+size_t arena_get_state(Arena* arena);
+void arena_rewind(Arena* arena, size_t previousState);
 
 
 // DATA STRUCTURES BUILD TO WORK WITH ARENAS
@@ -81,39 +82,69 @@ extern void arena_rewind(Arena* arena, size_t previousState);
 typedef struct ustring ustring;
 typedef struct wstring wstring;
 
-extern ustring* ustring_create(const char* text, Arena* arena);
-extern ustring* ustring_create_with_capacity(const size_t size, Arena* arena);
-extern const char* ustring_to_cstr(const ustring* text);
-extern size_t ustring_size(const ustring* text);
-extern size_t ustring_capacity(const ustring* text);
-extern ustring* ustring_concat(const ustring* text1, const ustring* text2, Arena* arena);
-extern void ustring_append(ustring** destination, const ustring* source, Arena* arena);
-extern void ustring_append_cstr(ustring** destination, const char* cstr, Arena* arena);
-extern _Bool ustring_equals(const ustring* text1, const ustring* text2);
+ustring* ustring_create(const char* text, Arena* arena);
+ustring* ustring_create_with_capacity(const size_t size, Arena* arena);
+const char* ustring_to_cstr(const ustring* text);
+size_t ustring_size(const ustring* text);
+size_t ustring_capacity(const ustring* text);
+ustring* ustring_concat(const ustring* text1, const ustring* text2, Arena* arena);
+void ustring_append(ustring** destination, const ustring* source, Arena* arena);
+void ustring_append_cstr(ustring** destination, const char* cstr, Arena* arena);
+_Bool ustring_equals(const ustring* text1, const ustring* text2);
 
-extern wstring* wstring_create(const wchar_t* text, Arena* arena);
-extern wstring* wstring_create_with_capacity(const size_t size, Arena* arena);
-extern const wchar_t* wstring_to_wstr(const wstring* text);
-extern size_t wstring_size(const wstring* text);
-extern size_t wstring_capacity(const wstring* text);
-extern wstring* wstring_concat(const wstring* text1, const wstring* text2, Arena* arena);
-extern void wstring_append(wstring** destination, const wstring* source, Arena* arena);
-extern void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena);
-extern _Bool wstring_equals(const wstring* text1, const wstring* text2);
+wstring* wstring_create(const wchar_t* text, Arena* arena);
+wstring* wstring_create_with_capacity(const size_t size, Arena* arena);
+const wchar_t* wstring_to_wstr(const wstring* text);
+size_t wstring_size(const wstring* text);
+size_t wstring_capacity(const wstring* text);
+wstring* wstring_concat(const wstring* text1, const wstring* text2, Arena* arena);
+void wstring_append(wstring** destination, const wstring* source, Arena* arena);
+void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena);
+_Bool wstring_equals(const wstring* text1, const wstring* text2);
 
 
 typedef struct _gvec _gvec;
-_gvec* _gvec_create(size_t element_size, Arena* arena);
-void _gvec_reserve(_gvec** vec, size_t size, size_t element_size, Arena* arena);
+_gvec* _gvec_create(size_t element_size, size_t alignment, Arena* arena);
+void _gvec_reserve(_gvec* vec, size_t new_capacity, Arena* arena);
+void _gvec_emplace_back(_gvec* vec, const uint8_t* data, Arena* arena);
+void _gvec_pop_back(_gvec* vec);
+void _gvec_clear(_gvec* vec);
+uint8_t* _gvec_data(_gvec* vec);
+size_t _gvec_size(_gvec* vec);
+size_t _gvec_capacity(_gvec* vec);
+uint8_t* _gvec_front(const _gvec* vec);
+uint8_t* _gvec_back(const _gvec* vec);
 
-
-#define vectorGen(type,prefix) \
+#define dynVecGen(type, prefix) \
     typedef _gvec prefix##vec; \
-    static inline prefix##vec* prefix##vec_create(Arena* arena) { \
-        return (prefix##vec*)_gvec_create(sizeof(type), Arena* arena); \
-    } \
-    static inline void prefix##vec_resize(prefix##vec** vec, size_t size, Arena* arena) {\
-        return _gvec_resize((_gvec**)vec, size, sizeof(type), arena); \
-    }
+    static inline prefix##vec* prefix##vec_create(Arena* arena) { return (_gvec*)_gvec_create(sizeof(type), alignof(type), arena); } \
+    static inline void prefix##vec_reserve(prefix##vec* vec, size_t size, Arena* arena) { _gvec_reserve((_gvec*)vec, size, arena); } \
+    static inline void prefix##vec_push(prefix##vec* vec, type data, Arena* arena) { _gvec_emplace_back((_gvec*)vec, (uint8_t*)&data, arena); } \
+    static inline void prefix##vec_emplace_back(prefix##vec* vec, type* data_ptr, Arena* arena) { _gvec_emplace_back((_gvec*)vec, (uint8_t*)data_ptr, arena); } \
+    static inline void prefix##vec_pop_back(prefix##vec* vec) { _gvec_pop_back((_gvec*)vec); } \
+    static inline void prefix##vec_clear(prefix##vec* vec) { _gvec_clear((_gvec*)vec); } \
+    static inline type* prefix##vec_data(prefix##vec* vec) { return (type*)_gvec_data((_gvec*)vec); } \
+    static inline size_t prefix##vec_size(prefix##vec* vec) { return _gvec_size((_gvec*)vec); } \
+    static inline size_t prefix##vec_capacity(prefix##vec* vec) { return _gvec_capacity((_gvec*)vec); } \
+    static inline type* prefix##vec_front(prefix##vec* vec) { return (type*)_gvec_front((_gvec*)vec); } \
+    static inline type* prefix##vec_back(prefix##vec* vec) { return (type*)_gvec_back((_gvec*)vec); } \
+    static inline type* prefix##vec_at(prefix##vec* vec, size_t index) { \
+        assert(index < _gvec_size(vec) && "Vector access out of bounds");\
+         return &(((type*)_gvec_data(vec))[index]); } \
+    static inline type* prefix##vec_idx(prefix##vec* vec, size_t index) { return &(((type*)_gvec_data(vec))[index]); }
+
+
+dynVecGen(int8_t, i8)
+dynVecGen(int16_t, i16)
+dynVecGen(int32_t, i32)
+dynVecGen(int64_t, i64)
+dynVecGen(uint8_t, u8)
+dynVecGen(uint16_t, u16)
+dynVecGen(uint32_t, u32)
+dynVecGen(uint64_t, u64)
+dynVecGen(float, f32)
+dynVecGen(double, f64)
+dynVecGen(ustring*, ustr)
+dynVecGen(wstring*, wstr)
 
 #endif // SDS_IMPLEMENTATION

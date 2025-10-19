@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.30)
-project(SDS LANGUAGES C)
+project(SDS VERSION 1.2.0 LANGUAGES C)
 add_library(${PROJECT_NAME} STATIC
     sds_Memory.c
     sds_string.c
+    sds_vector.c
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
