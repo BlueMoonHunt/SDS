@@ -27,21 +27,21 @@
             struct { type x, y; }; \
             struct { type r, g; }; \
         }; \
-    } prefix##vector2; \
+    } prefix##vec2; \
 \
     typedef struct { \
         union { \
             struct { type x, y, z; }; \
             struct { type r, g, b; }; \
         }; \
-    } prefix##vector3; \
+    } prefix##vec3; \
 \
     typedef struct { \
         union { \
             struct { type x, y, z, w; }; \
             struct { type r, g, b, a; }; \
         }; \
-    } prefix##vector4;
+    } prefix##vec4;
 
 vecGen(int8_t, i8)
 vecGen(int16_t, i16)
@@ -106,21 +106,21 @@ _Bool wstring_equals(const wstring* text1, const wstring* text2);
 typedef struct vector vector;
 vector* vector_create(size_t element_size, size_t alignment, Arena* arena);
 void vector_reserve(vector* vec, size_t new_capacity, Arena* arena);
-void vector_emplace_back(vector* vec, const uint8_t* data, Arena* arena);
+void vector_emplace_back(vector* vec, const void* data, Arena* arena);
 void vector_pop_back(vector* vec);
 void vector_clear(vector* vec);
-uint8_t* vector_data(vector* vec);
+void* vector_data(vector* vec);
 size_t vector_size(vector* vec);
 size_t vector_capacity(vector* vec);
-uint8_t* vector_front(const vector* vec);
-uint8_t* vector_back(const vector* vec);
+void* vector_front(const vector* vec);
+void* vector_back(const vector* vec);
 
 #define vectorGen(type, prefix) \
     typedef vector prefix##vector; \
     static inline prefix##vector* prefix##vector_create(Arena* arena) { return (vector*)vector_create(sizeof(type), alignof(type), arena); } \
     static inline void prefix##vector_reserve(prefix##vector* vec, size_t size, Arena* arena) { vector_reserve((vector*)vec, size, arena); } \
-    static inline void prefix##vector_push(prefix##vector* vec, type data, Arena* arena) { vector_emplace_back((vector*)vec, (uint8_t*)&data, arena); } \
-    static inline void prefix##vector_emplace_back(prefix##vector* vec, type* data_ptr, Arena* arena) { vector_emplace_back((vector*)vec, (uint8_t*)data_ptr, arena); } \
+    static inline void prefix##vector_push(prefix##vector* vec, type data, Arena* arena) { vector_emplace_back((vector*)vec, &data, arena); } \
+    static inline void prefix##vector_emplace_back(prefix##vector* vec, type* data_ptr, Arena* arena) { vector_emplace_back((vector*)vec, data_ptr, arena); } \
     static inline void prefix##vector_pop_back(prefix##vector* vec) { vector_pop_back((vector*)vec); } \
     static inline void prefix##vector_clear(prefix##vector* vec) { vector_clear((vector*)vec); } \
     static inline type* prefix##vector_data(prefix##vector* vec) { return (type*)vector_data((vector*)vec); } \
