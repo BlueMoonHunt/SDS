@@ -27,21 +27,21 @@
             struct { type x, y; }; \
             struct { type r, g; }; \
         }; \
-    } prefix##vec2; \
+    } prefix##vector2; \
 \
     typedef struct { \
         union { \
             struct { type x, y, z; }; \
             struct { type r, g, b; }; \
         }; \
-    } prefix##vec3; \
+    } prefix##vector3; \
 \
     typedef struct { \
         union { \
             struct { type x, y, z, w; }; \
             struct { type r, g, b, a; }; \
         }; \
-    } prefix##vec4;
+    } prefix##vector4;
 
 vecGen(int8_t, i8)
 vecGen(int16_t, i16)
@@ -103,48 +103,48 @@ void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* aren
 _Bool wstring_equals(const wstring* text1, const wstring* text2);
 
 
-typedef struct _gvec _gvec;
-_gvec* _gvec_create(size_t element_size, size_t alignment, Arena* arena);
-void _gvec_reserve(_gvec* vec, size_t new_capacity, Arena* arena);
-void _gvec_emplace_back(_gvec* vec, const uint8_t* data, Arena* arena);
-void _gvec_pop_back(_gvec* vec);
-void _gvec_clear(_gvec* vec);
-uint8_t* _gvec_data(_gvec* vec);
-size_t _gvec_size(_gvec* vec);
-size_t _gvec_capacity(_gvec* vec);
-uint8_t* _gvec_front(const _gvec* vec);
-uint8_t* _gvec_back(const _gvec* vec);
+typedef struct vector vector;
+vector* vector_create(size_t element_size, size_t alignment, Arena* arena);
+void vector_reserve(vector* vec, size_t new_capacity, Arena* arena);
+void vector_emplace_back(vector* vec, const uint8_t* data, Arena* arena);
+void vector_pop_back(vector* vec);
+void vector_clear(vector* vec);
+uint8_t* vector_data(vector* vec);
+size_t vector_size(vector* vec);
+size_t vector_capacity(vector* vec);
+uint8_t* vector_front(const vector* vec);
+uint8_t* vector_back(const vector* vec);
 
-#define dynVecGen(type, prefix) \
-    typedef _gvec prefix##vec; \
-    static inline prefix##vec* prefix##vec_create(Arena* arena) { return (_gvec*)_gvec_create(sizeof(type), alignof(type), arena); } \
-    static inline void prefix##vec_reserve(prefix##vec* vec, size_t size, Arena* arena) { _gvec_reserve((_gvec*)vec, size, arena); } \
-    static inline void prefix##vec_push(prefix##vec* vec, type data, Arena* arena) { _gvec_emplace_back((_gvec*)vec, (uint8_t*)&data, arena); } \
-    static inline void prefix##vec_emplace_back(prefix##vec* vec, type* data_ptr, Arena* arena) { _gvec_emplace_back((_gvec*)vec, (uint8_t*)data_ptr, arena); } \
-    static inline void prefix##vec_pop_back(prefix##vec* vec) { _gvec_pop_back((_gvec*)vec); } \
-    static inline void prefix##vec_clear(prefix##vec* vec) { _gvec_clear((_gvec*)vec); } \
-    static inline type* prefix##vec_data(prefix##vec* vec) { return (type*)_gvec_data((_gvec*)vec); } \
-    static inline size_t prefix##vec_size(prefix##vec* vec) { return _gvec_size((_gvec*)vec); } \
-    static inline size_t prefix##vec_capacity(prefix##vec* vec) { return _gvec_capacity((_gvec*)vec); } \
-    static inline type* prefix##vec_front(prefix##vec* vec) { return (type*)_gvec_front((_gvec*)vec); } \
-    static inline type* prefix##vec_back(prefix##vec* vec) { return (type*)_gvec_back((_gvec*)vec); } \
-    static inline type* prefix##vec_at(prefix##vec* vec, size_t index) { \
-        assert(index < _gvec_size(vec) && "Vector access out of bounds");\
-         return &(((type*)_gvec_data(vec))[index]); } \
-    static inline type* prefix##vec_idx(prefix##vec* vec, size_t index) { return &(((type*)_gvec_data(vec))[index]); }
+#define vectorGen(type, prefix) \
+    typedef vector prefix##vector; \
+    static inline prefix##vector* prefix##vector_create(Arena* arena) { return (vector*)vector_create(sizeof(type), alignof(type), arena); } \
+    static inline void prefix##vector_reserve(prefix##vector* vec, size_t size, Arena* arena) { vector_reserve((vector*)vec, size, arena); } \
+    static inline void prefix##vector_push(prefix##vector* vec, type data, Arena* arena) { vector_emplace_back((vector*)vec, (uint8_t*)&data, arena); } \
+    static inline void prefix##vector_emplace_back(prefix##vector* vec, type* data_ptr, Arena* arena) { vector_emplace_back((vector*)vec, (uint8_t*)data_ptr, arena); } \
+    static inline void prefix##vector_pop_back(prefix##vector* vec) { vector_pop_back((vector*)vec); } \
+    static inline void prefix##vector_clear(prefix##vector* vec) { vector_clear((vector*)vec); } \
+    static inline type* prefix##vector_data(prefix##vector* vec) { return (type*)vector_data((vector*)vec); } \
+    static inline size_t prefix##vector_size(prefix##vector* vec) { return vector_size((vector*)vec); } \
+    static inline size_t prefix##vector_capacity(prefix##vector* vec) { return vector_capacity((vector*)vec); } \
+    static inline type* prefix##vector_front(prefix##vector* vec) { return (type*)vector_front((vector*)vec); } \
+    static inline type* prefix##vector_back(prefix##vector* vec) { return (type*)vector_back((vector*)vec); } \
+    static inline type* prefix##vector_at(prefix##vector* vec, size_t index) { \
+        assert(index < vector_size(vec) && "Vector access out of bounds");\
+         return &(((type*)vector_data(vec))[index]); } \
+    static inline type* prefix##vector_idx(prefix##vector* vec, size_t index) { return &(((type*)vector_data(vec))[index]); }
 
 
-dynVecGen(int8_t, i8)
-dynVecGen(int16_t, i16)
-dynVecGen(int32_t, i32)
-dynVecGen(int64_t, i64)
-dynVecGen(uint8_t, u8)
-dynVecGen(uint16_t, u16)
-dynVecGen(uint32_t, u32)
-dynVecGen(uint64_t, u64)
-dynVecGen(float, f32)
-dynVecGen(double, f64)
-dynVecGen(ustring*, ustr)
-dynVecGen(wstring*, wstr)
+vectorGen(int8_t, i8)
+vectorGen(int16_t, i16)
+vectorGen(int32_t, i32)
+vectorGen(int64_t, i64)
+vectorGen(uint8_t, u8)
+vectorGen(uint16_t, u16)
+vectorGen(uint32_t, u32)
+vectorGen(uint64_t, u64)
+vectorGen(float, f32)
+vectorGen(double, f64)
+vectorGen(ustring*, ustr)
+vectorGen(wstring*, wstr)
 
 #endif // SDS_IMPLEMENTATION
