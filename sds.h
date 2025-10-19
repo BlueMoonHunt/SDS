@@ -20,35 +20,52 @@
 #define gb(value) ((value) * 1024 * mb(1))
 #define tb(value) ((value) * 1024 * gb(1))
 
-#define VEC_GEN(type, prefix) \
-    typedef struct { type x; type y; } prefix##vec2; \
-    typedef struct { type x; type y; type z; } prefix##vec3; \
-    typedef struct { type x; type y; type z; type w; } prefix##vec4;
+#define vecGen(type, prefix) \
+    typedef struct { \
+        union { \
+            struct { type x, y; }; \
+            struct { type r, g; }; \
+        }; \
+    } prefix##vec2; \
+\
+    typedef struct { \
+        union { \
+            struct { type x, y, z; }; \
+            struct { type r, g, b; }; \
+        }; \
+    } prefix##vec3; \
+\
+    typedef struct { \
+        union { \
+            struct { type x, y, z, w; }; \
+            struct { type r, g, b, a; }; \
+        }; \
+    } prefix##vec4;
 
-VEC_GEN(int32_t, i8);
-VEC_GEN(int16_t, i16);
-VEC_GEN(int32_t, i32);
-VEC_GEN(int64_t, i64);
+vecGen(int32_t, i8)
+vecGen(int16_t, i16)
+vecGen(int32_t, i32)
+vecGen(int64_t, i64)
+vecGen(uint32_t, u8)
+vecGen(uint16_t, u16)
+vecGen(uint32_t, u32)
+vecGen(uint64_t, u64)
+vecGen(float, f32)
+vecGen(double, f64)
 
-VEC_GEN(uint32_t, u8);
-VEC_GEN(uint16_t, u16);
-VEC_GEN(uint32_t, u32);
-VEC_GEN(uint64_t, u64);
-
-VEC_GEN(float, f32);
-VEC_GEN(double, f64);
+typedef enum ArenaFlag ArenaFlag;
+enum ArenaFlag {
+    ArenaFlag_none,
+    ArenaFlag_resize_on_overflow
+};
 
 typedef struct OverflowBlock OverflowBlock;
 typedef struct Arena Arena;
 
-// Creation & destroy
-extern Arena* arena_create(size_t capacity);
+extern Arena* arena_create(size_t capacity, ArenaFlag flag);
 extern void arena_destroy(Arena* arena);
-// Allocation
 extern void* arena_alloc(Arena* arena, size_t size, size_t alignment);
-// Reset
 extern void arena_reset(Arena* arena);
-// TODO : STATUS OF ARENA
 extern size_t arena_get_state(Arena* arena);
 extern void arena_rewind(Arena* arena, size_t previousState);
 
@@ -84,5 +101,19 @@ extern void wstring_append(wstring** destination, const wstring* source, Arena* 
 extern void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena);
 extern _Bool wstring_equals(const wstring* text1, const wstring* text2);
 
+
+typedef struct _gvec _gvec;
+_gvec* _gvec_create(size_t element_size, Arena* arena);
+void _gvec_reserve(_gvec** vec, size_t size, size_t element_size, Arena* arena);
+
+
+#define vectorGen(type,prefix) \
+    typedef _gvec prefix##vec; \
+    static inline prefix##vec* prefix##vec_create(Arena* arena) { \
+        return (prefix##vec*)_gvec_create(sizeof(type), Arena* arena); \
+    } \
+    static inline void prefix##vec_resize(prefix##vec** vec, size_t size, Arena* arena) {\
+        return _gvec_resize((_gvec**)vec, size, sizeof(type), arena); \
+    }
 
 #endif // SDS_IMPLEMENTATION
