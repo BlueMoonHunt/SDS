@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define STRING_BLOCK_SIZE 32
+
 typedef struct ustring ustring;
 struct ustring {
     size_t size;

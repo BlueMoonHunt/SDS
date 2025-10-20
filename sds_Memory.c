@@ -99,7 +99,7 @@ void arena_reset(Arena* arena) {
 
     arena->offset = 0;
 
-    if (arena->flags & ArenaFlag_resize_on_overflow && arena->overflow_size > 0) {
+    if (arena->flags & ArenaFlag_Resize_On_Overflow && arena->overflow_size > 0) {
         size_t new_size = arena->size + arena->overflow_size;
         uint8_t* memory = (uint8_t*)realloc(arena->memory, new_size);
 

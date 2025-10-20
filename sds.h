@@ -7,7 +7,7 @@
 
 #define alignUpPow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
 #define alignDownPow2(x,b) ((x)&(~((b) - 1)))
-#define alignUpPadPow2(x,b)  ((-(intptr_t)(x)) & ((b) - 1))
+#define alignUpPadPow2(x,b)  ((-(x)) & ((b) - 1))
 #define isPow2(x)          ((x)!=0 && ((x)&((x)-1))==0)
 #define isPow2OrZero(x)    ((((x) - 1)&(x)) == 0)
 
@@ -21,7 +21,7 @@
 #define gb(value) ((value) * 1024 * mb(1))
 #define tb(value) ((value) * 1024 * gb(1))
 
-#define vecGen(type, prefix) \
+#define vecImplementation(type, prefix) \
     typedef struct { \
         union { \
             struct { type x, y; }; \
@@ -43,21 +43,21 @@
         }; \
     } prefix##vec4;
 
-vecGen(int8_t, i8)
-vecGen(int16_t, i16)
-vecGen(int32_t, i32)
-vecGen(int64_t, i64)
-vecGen(uint8_t, u8)
-vecGen(uint16_t, u16)
-vecGen(uint32_t, u32)
-vecGen(uint64_t, u64)
-vecGen(float, f32)
-vecGen(double, f64)
+vecImplementation(int8_t, i8)
+vecImplementation(int16_t, i16)
+vecImplementation(int32_t, i32)
+vecImplementation(int64_t, i64)
+vecImplementation(uint8_t, u8)
+vecImplementation(uint16_t, u16)
+vecImplementation(uint32_t, u32)
+vecImplementation(uint64_t, u64)
+vecImplementation(float, f32)
+vecImplementation(double, f64)
 
 typedef enum ArenaFlag ArenaFlag;
 enum ArenaFlag {
-    ArenaFlag_none,
-    ArenaFlag_resize_on_overflow
+    ArenaFlag_None,
+    ArenaFlag_Resize_On_Overflow
 };
 
 typedef struct OverflowBlock OverflowBlock;
@@ -70,15 +70,7 @@ void arena_reset(Arena* arena);
 size_t arena_get_state(Arena* arena);
 void arena_rewind(Arena* arena, size_t previousState);
 
-
-// DATA STRUCTURES BUILD TO WORK WITH ARENAS
-// TODO : vector, map, unordered_map
-// InProgress : string
-// DONE :
-
 // STRING
-#define STRING_BLOCK_SIZE 32
-
 typedef struct ustring ustring;
 typedef struct wstring wstring;
 
@@ -102,8 +94,9 @@ void wstring_append(wstring** destination, const wstring* source, Arena* arena);
 void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena);
 _Bool wstring_equals(const wstring* text1, const wstring* text2);
 
-
+//VECTOR
 typedef struct vector vector;
+
 vector* vector_create(size_t element_size, size_t alignment, Arena* arena);
 void vector_reserve(vector* vec, size_t new_capacity, Arena* arena);
 void vector_emplace_back(vector* vec, const void* data, Arena* arena);
@@ -115,7 +108,7 @@ size_t vector_capacity(vector* vec);
 void* vector_front(const vector* vec);
 void* vector_back(const vector* vec);
 
-#define vectorGen(type, prefix) \
+#define vectorImplementation(type, prefix) \
     typedef vector prefix##vector; \
     static inline prefix##vector* prefix##vector_create(Arena* arena) { return (vector*)vector_create(sizeof(type), alignof(type), arena); } \
     static inline void prefix##vector_reserve(prefix##vector* vec, size_t size, Arena* arena) { vector_reserve((vector*)vec, size, arena); } \
@@ -134,17 +127,17 @@ void* vector_back(const vector* vec);
     static inline type* prefix##vector_idx(prefix##vector* vec, size_t index) { return &(((type*)vector_data(vec))[index]); }
 
 
-vectorGen(int8_t, i8)
-vectorGen(int16_t, i16)
-vectorGen(int32_t, i32)
-vectorGen(int64_t, i64)
-vectorGen(uint8_t, u8)
-vectorGen(uint16_t, u16)
-vectorGen(uint32_t, u32)
-vectorGen(uint64_t, u64)
-vectorGen(float, f32)
-vectorGen(double, f64)
-vectorGen(ustring*, ustr)
-vectorGen(wstring*, wstr)
+vectorImplementation(int8_t, i8)
+vectorImplementation(int16_t, i16)
+vectorImplementation(int32_t, i32)
+vectorImplementation(int64_t, i64)
+vectorImplementation(uint8_t, u8)
+vectorImplementation(uint16_t, u16)
+vectorImplementation(uint32_t, u32)
+vectorImplementation(uint64_t, u64)
+vectorImplementation(float, f32)
+vectorImplementation(double, f64)
+vectorImplementation(ustring*, ustr)
+vectorImplementation(wstring*, wstr)
 
 #endif // SDS_IMPLEMENTATION
