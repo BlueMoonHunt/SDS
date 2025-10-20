@@ -7,7 +7,7 @@
 
 #define alignUpPow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
 #define alignDownPow2(x,b) ((x)&(~((b) - 1)))
-#define alignUpPadPow2(x,b)  ((-(x)) & ((b) - 1))
+#define alignUpPadPow2(x,b)  ((0-(x)) & ((b) - 1))
 #define isPow2(x)          ((x)!=0 && ((x)&((x)-1))==0)
 #define isPow2OrZero(x)    ((((x) - 1)&(x)) == 0)
 
