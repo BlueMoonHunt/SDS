@@ -19,6 +19,7 @@ struct Arena {
     size_t offset;
     OverflowBlock* overflow_head;
     size_t overflow_size;
+    size_t overflow_count;
 };
 
 Arena* arena_create(size_t capacity, ArenaFlag flags) {
@@ -81,6 +82,7 @@ void* arena_alloc(Arena* arena, size_t size, size_t alignment) {
     tracker->next = arena->overflow_head;
     arena->overflow_head = tracker;
     arena->overflow_size += size;
+    arena->overflow_count += 1;
 
     return user_memory;
 }
@@ -96,6 +98,7 @@ void arena_reset(Arena* arena) {
         free(to_free);
     }
     arena->overflow_head = NULL;
+    arena->overflow_count = 0;
 
     arena->offset = 0;
 
@@ -112,11 +115,32 @@ void arena_reset(Arena* arena) {
     arena->overflow_size = 0;
 }
 
-size_t arena_get_state(Arena* arena) {
-    return (arena) ? arena->offset : 0;
+typedef struct ArenaState ArenaState;
+struct ArenaState {
+    size_t arena_offset;
+    OverflowBlock* overflow_head;
+    size_t overflow_count;
+};
+
+ArenaState* arena_get_state(Arena* arena) {
+    size_t offset = arena->offset;
+    void* head = arena->overflow_head;
+    size_t count = arena->overflow_count;
+
+    ArenaState* state = (ArenaState*)arena_alloc(arena, sizeof(ArenaState), alignof(ArenaState));
+    state->arena_offset = offset;
+    state->overflow_head = head;
+    state->overflow_count = count;
+
+    return state;
 }
 
-void arena_rewind(Arena* arena, size_t previous_state) {
-    if (arena && previous_state <= arena->offset)
-        arena->offset = previous_state;
+void arena_rewind(Arena* arena, ArenaState* previous_state) {
+    arena->offset = previous_state->arena_offset;
+    while (previous_state->overflow_count < arena->overflow_count) {
+        OverflowBlock* to_free = arena->overflow_head;
+        arena->overflow_head = arena->overflow_head->next;
+        free(to_free);
+        previous_state->overflow_count--;
+    }
 }
