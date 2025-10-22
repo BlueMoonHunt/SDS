@@ -62,13 +62,14 @@ enum ArenaFlag {
 
 typedef struct OverflowBlock OverflowBlock;
 typedef struct Arena Arena;
+typedef struct ArenaState ArenaState;
 
 Arena* arena_create(size_t capacity, ArenaFlag flag);
 void arena_destroy(Arena* arena);
 void* arena_alloc(Arena* arena, size_t size, size_t alignment);
 void arena_reset(Arena* arena);
-size_t arena_get_state(Arena* arena);
-void arena_rewind(Arena* arena, size_t previousState);
+ArenaState* arena_get_state(Arena* arena);
+void arena_rewind(Arena* arena, ArenaState* previousState);
 
 // STRING
 typedef struct ustring ustring;
@@ -97,9 +98,11 @@ _Bool wstring_equals(const wstring* text1, const wstring* text2);
 //VECTOR
 typedef struct vector vector;
 
-vector* vector_create(size_t element_size, size_t alignment, Arena* arena);
-void vector_reserve(vector* vec, size_t new_capacity, Arena* arena);
-void vector_emplace_back(vector* vec, const void* data, Arena* arena);
+vector* _vector_create(size_t element_size, size_t element_alignment, Arena* arena);
+#define vector_create(element_type, arena) _vector_create(sizeof(element_type), alignof(element_type), arena);
+void vector_reserve(vector* vec, size_t new_capacity);
+void _vector_emplace_back(vector* vec, const void* element, size_t element_size);
+#define vector_emplace_back(vector, element) _vector_emplace_back(vector, (element), sizeof(*(element)));
 void vector_pop_back(vector* vec);
 void vector_clear(vector* vec);
 void* vector_data(vector* vec);
@@ -108,36 +111,5 @@ size_t vector_capacity(vector* vec);
 void* vector_front(const vector* vec);
 void* vector_back(const vector* vec);
 
-#define vectorImplementation(type, prefix) \
-    typedef vector prefix##vector; \
-    static inline prefix##vector* prefix##vector_create(Arena* arena) { return (vector*)vector_create(sizeof(type), alignof(type), arena); } \
-    static inline void prefix##vector_reserve(prefix##vector* vec, size_t size, Arena* arena) { vector_reserve((vector*)vec, size, arena); } \
-    static inline void prefix##vector_push(prefix##vector* vec, type data, Arena* arena) { vector_emplace_back((vector*)vec, &data, arena); } \
-    static inline void prefix##vector_emplace_back(prefix##vector* vec, type* data_ptr, Arena* arena) { vector_emplace_back((vector*)vec, data_ptr, arena); } \
-    static inline void prefix##vector_pop_back(prefix##vector* vec) { vector_pop_back((vector*)vec); } \
-    static inline void prefix##vector_clear(prefix##vector* vec) { vector_clear((vector*)vec); } \
-    static inline type* prefix##vector_data(prefix##vector* vec) { return (type*)vector_data((vector*)vec); } \
-    static inline size_t prefix##vector_size(prefix##vector* vec) { return vector_size((vector*)vec); } \
-    static inline size_t prefix##vector_capacity(prefix##vector* vec) { return vector_capacity((vector*)vec); } \
-    static inline type* prefix##vector_front(prefix##vector* vec) { return (type*)vector_front((vector*)vec); } \
-    static inline type* prefix##vector_back(prefix##vector* vec) { return (type*)vector_back((vector*)vec); } \
-    static inline type* prefix##vector_at(prefix##vector* vec, size_t index) { \
-        assert(index < vector_size(vec) && "Vector access out of bounds");\
-         return &(((type*)vector_data(vec))[index]); } \
-    static inline type* prefix##vector_idx(prefix##vector* vec, size_t index) { return &(((type*)vector_data(vec))[index]); }
-
-
-vectorImplementation(int8_t, i8)
-vectorImplementation(int16_t, i16)
-vectorImplementation(int32_t, i32)
-vectorImplementation(int64_t, i64)
-vectorImplementation(uint8_t, u8)
-vectorImplementation(uint16_t, u16)
-vectorImplementation(uint32_t, u32)
-vectorImplementation(uint64_t, u64)
-vectorImplementation(float, f32)
-vectorImplementation(double, f64)
-vectorImplementation(ustring*, ustr)
-vectorImplementation(wstring*, wstr)
 
 #endif // SDS_IMPLEMENTATION
