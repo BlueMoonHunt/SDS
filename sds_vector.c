@@ -46,7 +46,7 @@ void _vector_emplace_back(vector* vec, const void* element, size_t element_size)
         return;
 
     if (vec->size == vec->capacity) {
-        size_t new_cap = alignUpPow2(vec->capacity * 2, VECTOR_BLOCK_SIZE);
+        size_t new_cap = align_up_pow2(vec->capacity * 2, VECTOR_BLOCK_SIZE);
         vector_reserve(vec, new_cap);
     }
 

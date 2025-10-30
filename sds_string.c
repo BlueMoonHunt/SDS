@@ -2,7 +2,6 @@
 #include <string.h>
 #include <wchar.h>
 #include <stddef.h>
-#include <stdbool.h>
 
 #define STRING_BLOCK_SIZE 32
 
@@ -23,7 +22,7 @@ struct wstring {
 // --- ustring Implementation ---
 
 ustring* ustring_create_with_capacity(const size_t size, Arena* arena) {
-    size_t allocated_elements = alignUpPow2(size + 1, STRING_BLOCK_SIZE);
+    size_t allocated_elements = align_up_pow2(size + 1, STRING_BLOCK_SIZE);
     ustring* str = (ustring*)arena_alloc(arena, sizeof(ustring) + allocated_elements * sizeof(char), alignof(ustring));
 
     str->size = size;
@@ -94,14 +93,14 @@ _Bool ustring_equals(const ustring* text1, const ustring* text2) {
     if (!text1 || !text2)
         return text1 == text2;
     if (text1->size != text2->size)
-        return false;
+        return 0;
     return memcmp(text1->data, text2->data, text1->size) == 0;
 }
 
 // --- wstring Implementation ---
 
 wstring* wstring_create_with_capacity(const size_t size, Arena* arena) {
-    size_t allocated_elements = alignUpPow2(size + 1, STRING_BLOCK_SIZE);
+    size_t allocated_elements = align_up_pow2(size + 1, STRING_BLOCK_SIZE);
 
     wstring* wide_str = (wstring*)arena_alloc(arena, sizeof(wstring) + allocated_elements * sizeof(wchar_t), alignof(wstring));
 
@@ -175,7 +174,7 @@ _Bool wstring_equals(const wstring* text1, const wstring* text2) {
     if (!text1 || !text2)
         return text1 == text2;
     if (text1->size != text2->size)
-        return false;
+        return 0;
 
     return wmemcmp(text1->data, text2->data, text1->size) == 0;
 }

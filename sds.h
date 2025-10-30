@@ -3,25 +3,26 @@
 
 #include <stdint.h>
 #include <stdalign.h>
-#include <assert.h>
 
-#define alignUpPow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
-#define alignDownPow2(x,b) ((x)&(~((b) - 1)))
-#define alignUpPadPow2(x,b)  ((0-(x)) & ((b) - 1))
-#define isPow2(x)          ((x)!=0 && ((x)&((x)-1))==0)
-#define isPow2OrZero(x)    ((((x) - 1)&(x)) == 0)
+#define align_up_pow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
+#define align_down_pow2(x,b) ((x)&(~((b) - 1)))
+#define align_up_pad_pow2(x,b)  ((0-(x)) & ((b) - 1))
+#define is_pow2(x)          ((x)!=0 && ((x)&((x)-1))==0)
+#define is_pow2_or_0(x)    ((((x) - 1)&(x)) == 0)
 
-#define extractBit(word, idx) (((word) >> (idx)) & 1)
+#define extract_bit(word, idx) (((word) >> (idx)) & 1)
 #define extract8(word, pos)   (((word) >> ((pos) << 3)) & UINT8_MAX)
 #define extract16(word, pos)  (((word) >> ((pos) << 4)) & UINT16_MAX)
 #define extract32(word, pos)  (((word) >> ((pos) << 5)) & UINT32_MAX)
+
+#define bit_rotate(value, rotation) ((value >> rotation) | (value << (-rotation) & (sizeof(value) * 8 - 1)));
 
 #define kb(value) ((value) * 1024)
 #define mb(value) ((value) * 1024 * kb(1))
 #define gb(value) ((value) * 1024 * mb(1))
 #define tb(value) ((value) * 1024 * gb(1))
 
-#define vecImplementation(type, prefix) \
+#define vec_implementation(type, prefix) \
     typedef struct { \
         union { \
             struct { type x, y; }; \
@@ -43,16 +44,18 @@
         }; \
     } prefix##vec4;
 
-vecImplementation(int8_t, i8)
-vecImplementation(int16_t, i16)
-vecImplementation(int32_t, i32)
-vecImplementation(int64_t, i64)
-vecImplementation(uint8_t, u8)
-vecImplementation(uint16_t, u16)
-vecImplementation(uint32_t, u32)
-vecImplementation(uint64_t, u64)
-vecImplementation(float, f32)
-vecImplementation(double, f64)
+vec_implementation(int8_t, i8)
+vec_implementation(int16_t, i16)
+vec_implementation(int32_t, i32)
+vec_implementation(int64_t, i64)
+vec_implementation(uint8_t, u8)
+vec_implementation(uint16_t, u16)
+vec_implementation(uint32_t, u32)
+vec_implementation(uint64_t, u64)
+vec_implementation(float, f32)
+vec_implementation(double, f64)
+
+
 
 typedef enum ArenaFlag ArenaFlag;
 enum ArenaFlag {
@@ -110,6 +113,8 @@ size_t vector_size(vector* vec);
 size_t vector_capacity(vector* vec);
 void* vector_front(const vector* vec);
 void* vector_back(const vector* vec);
+
+
 
 
 #endif // SDS_IMPLEMENTATION

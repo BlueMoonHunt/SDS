@@ -23,7 +23,7 @@ struct Arena {
 };
 
 Arena* arena_create(size_t capacity, ArenaFlag flags) {
-    size_t new_capacity = alignUpPow2(max(capacity, kb(1)), ARENA_ALLIGNMENT);
+    size_t new_capacity = align_up_pow2(max(capacity, kb(1)), ARENA_ALLIGNMENT);
     Arena* arena = (Arena*)malloc(sizeof(Arena));
     if (!arena)
         return NULL;
@@ -57,11 +57,11 @@ void* arena_alloc(Arena* arena, size_t size, size_t alignment) {
     if (!arena || size == 0)
         return NULL;
 
-    if (!isPow2(alignment))
+    if (!is_pow2(alignment))
         alignment = ARENA_ALLIGNMENT;
 
     uintptr_t current_ptr = (uintptr_t)(arena->memory + arena->offset);
-    size_t padding = alignUpPadPow2(current_ptr, alignment);
+    size_t padding = align_up_pad_pow2(current_ptr, alignment);
     size_t required_size = padding + size;
 
     if (arena->offset + required_size <= arena->size) {
@@ -76,7 +76,7 @@ void* arena_alloc(Arena* arena, size_t size, size_t alignment) {
         return NULL;
 
     void* user_memory_unaligned = (uint8_t*)block_start + sizeof(OverflowBlock);
-    size_t overflow_padding = alignUpPadPow2((uintptr_t)user_memory_unaligned, alignment);
+    size_t overflow_padding = align_up_pad_pow2((uintptr_t)user_memory_unaligned, alignment);
     void* user_memory = (uint8_t*)user_memory_unaligned + overflow_padding;
     OverflowBlock* tracker = (OverflowBlock*)block_start;
     tracker->next = arena->overflow_head;
