@@ -89,12 +89,12 @@ void ustring_append_cstr(ustring** destination, const char* cstr, Arena* arena) 
     ustring_append(destination, temp, arena);
 }
 
-_Bool ustring_equals(const ustring* text1, const ustring* text2) {
-    if (!text1 || !text2)
-        return text1 == text2;
-    if (text1->size != text2->size)
-        return 0;
-    return memcmp(text1->data, text2->data, text1->size) == 0;
+_Bool ustring_equal(const ustring* text1, const ustring* text2) {
+    return text1->size == text2->size && memcmp(text1->data, text2->data, text1->size) == 0;
+}
+
+_Bool ustring_equal_cstr(const ustring* text1, const char* text2, size_t text2_size) {
+    return text1->size == text2_size && memcmp(text1->data, text2, text1->size) == 0;
 }
 
 // --- wstring Implementation ---
@@ -170,11 +170,10 @@ void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* aren
     wstring_append(destination, temp, arena);
 }
 
-_Bool wstring_equals(const wstring* text1, const wstring* text2) {
-    if (!text1 || !text2)
-        return text1 == text2;
-    if (text1->size != text2->size)
-        return 0;
+_Bool wstring_equal_wstr(const wstring* text1, const wchar_t* text2, size_t text2_size) {
+    return text1->size && text2_size && wmemcmp(text1->data, text2, text1->size) == 0;
+}
 
-    return wmemcmp(text1->data, text2->data, text1->size) == 0;
+_Bool wstring_equal(const wstring* text1, const wstring* text2) {
+    return text1->size && text2->size && wmemcmp(text1->data, text2->data, text1->size) == 0;
 }

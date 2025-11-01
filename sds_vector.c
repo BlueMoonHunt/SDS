@@ -1,7 +1,7 @@
 #include "sds.h"
 #include <string.h>
 
-#define VECTOR_BLOCK_SIZE 32
+#define VECTOR_BLOCK_SIZE 8
 
 struct vector {
     size_t size;
@@ -41,8 +41,8 @@ void vector_reserve(vector* vec, size_t new_capacity) {
     }
 }
 
-void _vector_emplace_back(vector* vec, const void* element, size_t element_size) {
-    if (!vec || !element || vec->element_size != element_size)
+void vector_emplace_back(vector* vec, const void* element) {
+    if (!vec || !element)
         return;
 
     if (vec->size == vec->capacity) {
@@ -65,15 +65,15 @@ void vector_clear(vector* vec) {
         vec->size = 0;
 }
 
-void* vector_data(vector* vec) {
+void* vector_data(const vector* vec) {
     return (vec) ? vec->data : NULL;
 }
 
-size_t vector_size(vector* vec) {
+size_t vector_size(const vector* vec) {
     return (vec) ? vec->size : 0;
 }
 
-size_t vector_capacity(vector* vec) {
+size_t vector_capacity(const vector* vec) {
     return (vec) ? vec->capacity : 0;
 }
 

@@ -72,7 +72,7 @@ void arena_destroy(Arena* arena);
 void* arena_alloc(Arena* arena, size_t size, size_t alignment);
 void arena_reset(Arena* arena);
 ArenaState* arena_get_state(Arena* arena);
-void arena_rewind(Arena* arena, ArenaState* previousState);
+void arena_rewind(ArenaState* previous_state, Arena* arena);
 
 // STRING
 typedef struct ustring ustring;
@@ -86,7 +86,8 @@ size_t ustring_capacity(const ustring* text);
 ustring* ustring_concat(const ustring* text1, const ustring* text2, Arena* arena);
 void ustring_append(ustring** destination, const ustring* source, Arena* arena);
 void ustring_append_cstr(ustring** destination, const char* cstr, Arena* arena);
-_Bool ustring_equals(const ustring* text1, const ustring* text2);
+_Bool ustring_equal(const ustring* text1, const ustring* text2);
+_Bool ustring_equal_cstr(const ustring* text1, const char* text2, size_t text2_size);
 
 wstring* wstring_create(const wchar_t* text, Arena* arena);
 wstring* wstring_create_with_capacity(const size_t size, Arena* arena);
@@ -96,25 +97,23 @@ size_t wstring_capacity(const wstring* text);
 wstring* wstring_concat(const wstring* text1, const wstring* text2, Arena* arena);
 void wstring_append(wstring** destination, const wstring* source, Arena* arena);
 void wstring_append_wstr(wstring** destination, const wchar_t* wstr, Arena* arena);
-_Bool wstring_equals(const wstring* text1, const wstring* text2);
+_Bool wstring_equal_wstr(const wstring* text1, const wchar_t* text2, size_t text2_size);
+_Bool wstring_equal(const wstring* text1, const wstring* text2);
 
 //VECTOR
 typedef struct vector vector;
 
 vector* _vector_create(size_t element_size, size_t element_alignment, Arena* arena);
-#define vector_create(element_type, arena) _vector_create(sizeof(element_type), alignof(element_type), arena);
+#define vector_create(element_type, arena) _vector_create(sizeof(element_type), alignof(element_type), arena)
 void vector_reserve(vector* vec, size_t new_capacity);
-void _vector_emplace_back(vector* vec, const void* element, size_t element_size);
-#define vector_emplace_back(vector, element) _vector_emplace_back(vector, (element), sizeof(*(element)));
+void vector_emplace_back(vector* vec, const void* element);
 void vector_pop_back(vector* vec);
 void vector_clear(vector* vec);
-void* vector_data(vector* vec);
-size_t vector_size(vector* vec);
-size_t vector_capacity(vector* vec);
+void* vector_data(const vector* vec);
+#define vector_data_as(vec, type) ((type*)vector_data(vec))
+size_t vector_size(const vector* vec);
+size_t vector_capacity(const vector* vec);
 void* vector_front(const vector* vec);
 void* vector_back(const vector* vec);
-
-
-
 
 #endif // SDS_IMPLEMENTATION

@@ -40,6 +40,7 @@ Arena* arena_create(size_t capacity, ArenaFlag flags) {
     arena->offset = 0;
     arena->overflow_head = NULL;
     arena->overflow_size = 0;
+    arena->overflow_count = 0;
 
     return arena;
 }
@@ -135,7 +136,7 @@ ArenaState* arena_get_state(Arena* arena) {
     return state;
 }
 
-void arena_rewind(Arena* arena, ArenaState* previous_state) {
+void arena_rewind(ArenaState* previous_state, Arena* arena) {
     arena->offset = previous_state->arena_offset;
     while (previous_state->overflow_count < arena->overflow_count) {
         OverflowBlock* to_free = arena->overflow_head;
