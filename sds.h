@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include <stdalign.h>
 
+#if defined(_MSC_VER)
+#define sds_align(x) __declspec(align(x))
+#else
+#define sds_align(x) __attribute__((aligned(x)))
+#endif
+
 #define align_up_pow2(x,b)   (((x) + (b) - 1)&(~((b) - 1)))
 #define align_down_pow2(x,b) ((x)&(~((b) - 1)))
 #define align_up_pad_pow2(x,b)  ((0-(x)) & ((b) - 1))
